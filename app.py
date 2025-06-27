@@ -77,38 +77,28 @@ if uploaded_file:
     df_above = df_all[df_all["本月應收款"] >= 200000]
     df_below = df_all[df_all["本月應收款"] < 200000]
 
-def plot_bar(data, title, xtick_scale=0.7, label_fontscale=1.0):
-    fig, ax = plt.subplots(figsize=(12, 6))
-    data_sorted = data.sort_values("本月應收款", ascending=False).reset_index(drop=True)
-    sns.barplot(data=data_sorted, x="客戶名稱", y="本月應收款", ax=ax)
+    def plot_bar(data, title, xtick_scale=0.7, label_fontscale=1.0):
+        fig, ax = plt.subplots(figsize=(12, 6))
+        data_sorted = data.sort_values("本月應收款", ascending=False).reset_index(drop=True)
+        sns.barplot(data=data_sorted, x="客戶名稱", y="本月應收款", ax=ax)
+        ax.set_title(title, fontproperties=ch_font)
+        ax.set_ylabel("本月應收款", fontproperties=ch_font)
+        ax.set_xlabel("客戶名稱", fontproperties=ch_font)
 
-    # 中文圖標與軸標籤
-    ax.set_title(title, fontproperties=ch_font)
-    ax.set_ylabel("本月應收款", fontproperties=ch_font)
-    ax.set_xlabel("客戶名稱", fontproperties=ch_font)
+        for label in ax.get_xticklabels():
+            label.set_fontproperties(ch_font)
+            label.set_rotation(45)
+            label.set_horizontalalignment("right")
+            label.set_fontsize(label.get_size() * xtick_scale)
+        for label in ax.get_yticklabels():
+            label.set_fontproperties(ch_font)
 
-    # ✅ 修正 x 軸刻度文字為中文字型
-    for label in ax.get_xticklabels():
-        label.set_fontproperties(ch_font)
-        label.set_rotation(45)
-        label.set_horizontalalignment("right")
-        label.set_fontsize(label.get_size() * xtick_scale)
+        for idx, row in data_sorted.iterrows():
+            ax.text(idx, row["本月應收款"], f"{row['本月應收款']:,.0f}",
+                    ha='center', va='bottom', fontsize=9 * label_fontscale, fontproperties=ch_font)
 
-    # ✅ 修正 y 軸刻度文字為中文字型
-    for label in ax.get_yticklabels():
-        label.set_fontproperties(ch_font)
+        st.pyplot(fig)
 
-    # 條形頂端金額數字
-    for idx, row in data_sorted.iterrows():
-        ax.text(idx, row["本月應收款"], f"{row['本月應收款']:,.0f}",
-                ha='center', va='bottom', fontsize=9 * label_fontscale, fontproperties=ch_font)
-
-    st.pyplot(fig)
-
-
-    st.pyplot(fig)
-
-# ✅ 把這三段放回 if uploaded_file: 裡面最下面
     st.subheader("🔹 前五大客戶 - 本月應收帳款")
     plot_bar(df_top5, "前五大客戶 - 本月應收帳款")
 
