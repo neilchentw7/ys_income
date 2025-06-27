@@ -5,14 +5,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import matplotlib
 import platform
+from matplotlib.font_manager import FontProperties
 
-# 自動設定中文字型
-if platform.system() == 'Windows':
-    matplotlib.rcParams['font.family'] = 'Microsoft JhengHei'
-elif platform.system() == 'Darwin':
-    matplotlib.rcParams['font.family'] = 'Heiti TC'
-else:
-    matplotlib.rcParams['font.family'] = 'Noto Sans CJK TC'
+# 指定中文字型：改為使用 NotoSansTC-Black.ttf
+ch_font = FontProperties(fname="fonts/NotoSansTC-Black.ttf")
 matplotlib.rcParams['axes.unicode_minus'] = False
 
 st.set_page_config(page_title="應收帳款分析", layout="wide")
@@ -23,7 +19,7 @@ if uploaded_file:
     shipment_value = 0
     try:
         df_sales = pd.read_excel(uploaded_file, sheet_name="銷售月報", header=None)
-        shipment_value = df_sales.iloc[9, 32]  # AG10
+        shipment_value = df_sales.iloc[9, 32]
         st.metric("📦 本月出貨數量", f"{shipment_value:,.0f}")
     except Exception as e:
         st.warning(f"無法讀取銷售月報 AG10 出貨數量：{e}")
@@ -38,7 +34,6 @@ if uploaded_file:
 
     total_receivable = df['本月應收款'].sum()
     avg_price = total_receivable / shipment_value if shipment_value > 0 else 0
-
     st.metric("💰 本月應收款總金額", f"{total_receivable:,.0f} 元")
     st.metric("🧮 稅後平均單價", f"{avg_price:,.2f} 元/單位")
 
@@ -69,7 +64,6 @@ if uploaded_file:
     )
     df_merged = df_merged.sort_values('本月應收款', ascending=False).reset_index(drop=True)
 
-    # 將數值格式化為字串，讓 dataframe 可直接顯示
     df_display = df_merged.copy()
     df_display['本月應收款'] = df_display['本月應收款'].map(lambda x: f"{x:,.0f}")
     df_display['出貨量'] = df_display['出貨量'].map(lambda x: f"{x:,.1f}")
@@ -83,20 +77,33 @@ if uploaded_file:
     df_above = df_all[df_all["本月應收款"] >= 200000]
     df_below = df_all[df_all["本月應收款"] < 200000]
 
-    def plot_bar(data, title, xtick_scale=0.7, label_fontscale=1.0):
-        fig, ax = plt.subplots(figsize=(12, 6))
-        data_sorted = data.sort_values("本月應收款", ascending=False).reset_index(drop=True)
-        sns.barplot(data=data_sorted, x="客戶名稱", y="本月應收款", ax=ax)
-        ax.set_title(title)
-        for label in ax.get_xticklabels():
-            label.set_rotation(45)
-            label.set_horizontalalignment("right")
-            label.set_fontsize(ax.xaxis.get_ticklabels()[0].get_size() * xtick_scale)
-        for idx, row in data_sorted.iterrows():
-            ax.text(idx, row["本月應收款"], f"{row['本月應收款']:,.0f}",
-                    ha='center', va='bottom', fontsize=9 * label_fontscale)
-        st.pyplot(fig)
+def plot_bar(data, title, xtick_scale=0.7, label_fontscale=1.0):
+    fig, ax = plt.subplots(figsize=(12, 6))
+    data_sorted = data.sort_values("本月應收款", ascending=False).reset_index(drop=True)
+    sns.barplot(data=data_sorted, x="客戶名稱", y="本月應收款", ax=ax)
 
+    # 中文標題與標籤
+    ax.set_title(title, fontproperties=ch_font)
+    ax.set_ylabel("本月應收款", fontproperties=ch_font)
+    ax.set_xlabel("客戶名稱", fontproperties=ch_font)
+
+    # 中文軸刻度字體
+    for label in ax.get_xticklabels():
+        label.set_fontproperties(ch_font)
+        label.set_rotation(45)
+        label.set_horizontalalignment("right")
+        label.set_fontsize(label.get_size() * xtick_scale)
+    for label in ax.get_yticklabels():
+        label.set_fontproperties(ch_font)
+
+    # 條頂金額文字
+    for idx, row in data_sorted.iterrows():
+        ax.text(idx, row["本月應收款"], f"{row['本月應收款']:,.0f}",
+                ha='center', va='bottom', fontsize=9 * label_fontscale, fontproperties=ch_font)
+
+    st.pyplot(fig)
+
+# ✅ 把這三段放回 if uploaded_file: 裡面最下面
     st.subheader("🔹 前五大客戶 - 本月應收帳款")
     plot_bar(df_top5, "前五大客戶 - 本月應收帳款")
 
